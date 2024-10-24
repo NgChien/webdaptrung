@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mua và Đập Trứng</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #eef2f3;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 30px;
+            border-radius: 15px;
+            background-color: #fff;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        label {
+            margin-top: 15px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        input {
+            padding: 12px;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            width: 100%;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.1);
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+
+        button {
+            padding: 12px;
+            margin-top: 5px;
+            margin-bottom: 10px;
+            width: 100%;
+            border-radius: 10px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .category-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: space-between;
+        }
+
+        .category-button {
+            flex: 1 1 45%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            border-radius: 10px;
+            text-align: center;
+            background-color: #f1f1f1;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .category-button:hover {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .active {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .status {
+            margin-top: 20px;
+            text-align: center;
+            font-weight: bold;
+            color: #555;
+        }
+
+        progress {
+            width: 100%;
+            height: 20px;
+            margin-top: 10px;
+        }
+
+        .token {
+            display: inline-block;
+            max-width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Mua và Đập Trứng</h2>
+
+        <label for="idTokenInput">Nhập idToken của bạn:</label>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="idTokenInput" placeholder="Nhập x-id-token">
+            <button onclick="changeIdToken()">Nhập User ID</button>
+        </div>
+        <p><strong>idToken hiện tại là:</strong> <span id="currentIdToken" class="token"></span></p>
+
+        <label>Chọn danh mục trứng:</label>
+        <div class="category-buttons">
+            <div id="btn-page" class="category-button active" onclick="selectCategory('page')">page</div>
+            <div id="btn-pages_gang" class="category-button" onclick="selectCategory('pages_gang')">pages_gang</div>
+            <div id="btn-footballer" class="category-button" onclick="selectCategory('footballer')">footballer</div>
+            <div id="btn-crossbreed" class="category-button" onclick="selectCategory('crossbreed')">crossbreed</div>
+            <div id="btn-halloween" class="category-button" onclick="selectCategory('halloween')">halloween</div>
+            <div id="btn-band" class="category-button" onclick="selectCategory('band')">band</div>
+            <div id="btn-bands_mascot" class="category-button" onclick="selectCategory('bands_mascot')">bands_mascot</div>
+            <div id="btn-wild_west" class="category-button" onclick="selectCategory('wild_west')">wild_west</div>
+            <div id="btn-kaiju" class="category-button" onclick="selectCategory('kaiju')">kaiju</div>
+            
+        </div>
+
+        <label for="timesInput">Số lần mua và đập trứng:</label>
+        <input type="number" id="timesInput" placeholder="Nhập số lần" value="10">
+
+        <label for="minDelayInput">Thời gian chờ ngẫu nhiên tối thiểu (giây):</label>
+        <input type="number" id="minDelayInput" placeholder="Ví dụ: 6" value="6">
+
+        <label for="maxDelayInput">Thời gian chờ ngẫu nhiên tối đa (giây):</label>
+        <input type="number" id="maxDelayInput" placeholder="Ví dụ: 14" value="14">
+
+        <button id="startButton" onclick="buyAndClaimEggs()">Bắt đầu</button>
+        <button id="stopButton" onclick="stopProcess()" disabled>Dừng</button>
+
+        <div class="status">
+            <p id="status">Đang chờ...</p>
+            <progress id="progressBar" value="0" max="100"></progress>
+        </div>
+    </div>
+
+    <script>
+        let idToken = "";
+        let selectedCategory = "page";
+        let isRunning = false;
+        let loopCount = 0;
+
+        window.onload = function() {
+            const savedIdToken = localStorage.getItem('idToken');
+            if (savedIdToken) {
+                idToken = savedIdToken;
+                displayIdToken(idToken);
+            }
+        };
+
+        function displayIdToken(token) {
+            const truncatedToken = token.length > 20 ? token.slice(0, 10) + '...' + token.slice(-10) : token;
+            document.getElementById("currentIdToken").innerText = truncatedToken;
+        }
+
+        function changeIdToken() {
+            const newIdToken = document.getElementById("idTokenInput").value.trim();
+            if (newIdToken) {
+                idToken = newIdToken;
+                localStorage.setItem('idToken', idToken);
+                displayIdToken(idToken);
+            } else {
+                alert("Vui lòng nhập x-id-token hợp lệ.");
+            }
+        }
+
+        function selectCategory(category) {
+            selectedCategory = category;
+            const buttons = document.querySelectorAll('.category-button');
+            buttons.forEach(button => button.classList.remove('active'));
+            document.getElementById(`btn-${category}`).classList.add('active');
+        }
+
+        async function buyAndClaimEggs() {
+            if (!idToken) {
+                alert("Vui lòng nhập idToken");
+                return;
+            }
+
+            const times = parseInt(document.getElementById("timesInput").value);
+            const minDelay = parseInt(document.getElementById("minDelayInput").value);
+            const maxDelay = parseInt(document.getElementById("maxDelayInput").value);
+
+            if (isNaN(times) || times <= 0) {
+                alert("Vui lòng nhập số lần hợp lệ.");
+                return;
+            }
+            if (isNaN(minDelay) || isNaN(maxDelay) || minDelay < 1 || maxDelay < minDelay) {
+                alert("Vui lòng nhập khoảng thời gian ngẫu nhiên hợp lệ.");
+                return;
+            }
+
+            isRunning = true;
+            loopCount = 0;
+            document.getElementById("startButton").disabled = true;
+            document.getElementById("stopButton").disabled = false;
+            document.getElementById("status").innerText = `Đang chạy vòng 1...`;
+
+            const progressBar = document.getElementById("progressBar");
+            progressBar.value = 0;
+
+            for (let i = 0; i < times && isRunning; i++) {
+                await fetch("https://zenegg-api.production.cryptokitties.dapperlabs.com/egg/api/den/buy-fancy-egg", {
+                    headers: {
+                        "accept": "*/*",
+                        "content-type": "application/json",
+                        "x-id-token": idToken
+                    },
+                    body: JSON.stringify({ "cat_category": selectedCategory, "quantity": 1 }),
+                    method: "POST"
+                });
+
+                await fetch("https://zenegg-api.production.cryptokitties.dapperlabs.com/egg/api/den/claim-tao", {
+                    headers: {
+                        "accept": "*/*",
+                        "content-type": "application/json",
+                        "x-id-token": idToken
+                    },
+                    method: "POST"
+                });
+
+                loopCount++;
+                const nextDelayTime = randomDelay(minDelay, maxDelay);
+                document.getElementById("status").innerText = `Đã thực hiện ${loopCount} lần. Vòng tiếp theo sẽ bắt đầu sau ${nextDelayTime} giây...`;
+
+                progressBar.value = (loopCount / times) * 100;
+
+                await delay(nextDelayTime);
+            }
+
+            if (!isRunning) {
+                document.getElementById("status").innerText = "Đã dừng.";
+            } else {
+                document.getElementById("status").innerText = "Hoàn thành.";
+            }
+
+            document.getElementById("startButton").disabled = false;
+            document.getElementById("stopButton").disabled = true;
+        }
+
+        function stopProcess() {
+            isRunning = false;
+        }
+
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function randomDelay(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+    </script>
+</body>
+</html>
